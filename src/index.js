@@ -13,7 +13,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const paymentVerifier = new PaymentVerifier({
   metaKey: process.env.META_KEY || 'A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6',
   fileKey: process.env.FILE_KEY || 'F1E2D3C4B5A6F7E8D9C0B1A2F3E4D5C6',
-  deviceRegistry: {} // In production, this would be a database
+  deviceRegistry: {}, // In production, this would be a database
+  deviceBalances: {},
+  deviceAuthorizations: {},
+  transactions: []
 });
 
 // Routes
@@ -23,7 +26,7 @@ app.get('/', (req, res) => {
 
 // Endpoint to verify a tap payment
 app.get('/tap', (req, res) => {
-  const { d, c } = req.query;
+  const { d, c, amount, merchantAddress } = req.query;
   
   if (!d || !c) {
     return res.status(400).json({
@@ -33,13 +36,20 @@ app.get('/tap', (req, res) => {
     });
   }
   
-  const result = paymentVerifier.verifyPaymentRequest(d, c);
+  // Parse amount if provided
+  const paymentAmount = amount ? parseFloat(amount) : 0;
+  
+  const result = paymentVerifier.verifyPaymentRequest(d, c, paymentAmount, merchantAddress);
   if (result.success) {
     return res.json({
       success: true,
-      message: 'Payment verified successfully',
+      message: paymentAmount > 0 
+        ? `Payment of ${paymentAmount} USDC verified successfully` 
+        : 'Payment verified successfully',
       uid: result.uid,
-      counter: result.counter
+      counter: result.counter,
+      amount: result.amount,
+      balance: result.balance
     });
   } else {
     return res.status(400).json(result);
@@ -59,6 +69,26 @@ app.post('/generate', (req, res) => {
     });
   }
   
+  // Check if device is authorized
+  if (!paymentVerifier.isDeviceAuthorized(uid)) {
+    return res.status(403).json({
+      success: false,
+      error: 'Device not authorized for payments',
+      code: 'UNAUTHORIZED_DEVICE'
+    });
+  }
+  
+  // Check if device has sufficient balance
+  const balance = paymentVerifier.getDeviceBalance(uid);
+  if (balance <= 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Insufficient USDC balance',
+      code: 'INSUFFICIENT_BALANCE',
+      balance
+    });
+  }
+  
   const counter = paymentVerifier.getDeviceCounter(uid);
   const params = generatePaymentParameters(
     uid,
@@ -73,7 +103,133 @@ app.post('/generate', (req, res) => {
     params: {
       d: params.d,
       c: params.c
-    }
+    },
+    balance
+  });
+});
+
+// Endpoint to authorize a device for payments
+app.post('/authorize', (req, res) => {
+  const { uid } = req.body;
+  
+  if (!uid) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing device UID',
+      code: 'MISSING_UID'
+    });
+  }
+  
+  const result = paymentVerifier.authorizeDevice(uid);
+  
+  return res.json({
+    success: true,
+    message: 'Device authorized for payments',
+    uid
+  });
+});
+
+// Endpoint to deauthorize a device for payments
+app.post('/deauthorize', (req, res) => {
+  const { uid } = req.body;
+  
+  if (!uid) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing device UID',
+      code: 'MISSING_UID'
+    });
+  }
+  
+  const result = paymentVerifier.deauthorizeDevice(uid);
+  
+  return res.json({
+    success: true,
+    message: 'Device deauthorized for payments',
+    uid
+  });
+});
+
+// Endpoint to top up a device's USDC balance
+app.post('/topup', (req, res) => {
+  const { uid, amount, sourceAddress, network } = req.body;
+  
+  if (!uid) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing device UID',
+      code: 'MISSING_UID'
+    });
+  }
+  
+  if (!amount || amount <= 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid amount',
+      code: 'INVALID_AMOUNT'
+    });
+  }
+  
+  if (!sourceAddress) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing source address',
+      code: 'MISSING_SOURCE'
+    });
+  }
+  
+  try {
+    const result = paymentVerifier.topUpDeviceBalance(uid, amount, sourceAddress, network || 'base');
+    
+    return res.json({
+      success: true,
+      message: `Successfully topped up ${amount} USDC`,
+      balance: result.balance,
+      uid
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.message,
+      code: 'TOPUP_FAILED'
+    });
+  }
+});
+
+// Endpoint to get device balance
+app.get('/balance/:uid', (req, res) => {
+  const { uid } = req.params;
+  
+  if (!uid) {
+    return res.status(400).json({
+      success: false,
+      error: 'Missing device UID',
+      code: 'MISSING_UID'
+    });
+  }
+  
+  const balance = paymentVerifier.getDeviceBalance(uid);
+  const authorized = paymentVerifier.isDeviceAuthorized(uid);
+  const counter = paymentVerifier.getDeviceCounter(uid);
+  
+  return res.json({
+    success: true,
+    uid,
+    balance,
+    authorized,
+    counter
+  });
+});
+
+// Endpoint to get transaction history for a device
+app.get('/transactions/:uid?', (req, res) => {
+  const { uid } = req.params;
+  
+  const transactions = paymentVerifier.getTransactionHistory(uid);
+  
+  return res.json({
+    success: true,
+    transactions
   });
 });
 
