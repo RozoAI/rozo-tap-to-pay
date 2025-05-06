@@ -1,0 +1,22 @@
+{
+  "name": "rozo-tap-to-pay",
+  "version": "1.0.0",
+  "description": "Crypto native tap to pay between wearable and POS",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "jest",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "crypto-js": "^4.1.1",
+    "dotenv": "^16.0.3",
+    "body-parser": "^1.20.2"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "nodemon": "^2.0.22",
+    "supertest": "^6.3.3"
+  }
+} 
