@@ -5,6 +5,12 @@ Crypto native tap to pay between wearable and POS
 
 Rozo enables a customer to make payment to a merchant with crypto. To improve the experience, we introduce Tap to Pay via Rozo (not Visa).
 
+## Why we need this?
+
+While Visa offers Tap to Pay, it’s built on legacy rails—centralized, custodial, and fiat-based. Every transaction passes through multiple intermediaries, incurs fees, and exposes sensitive data like plaintext CVVs.
+
+Rozo Tap to Pay reimagines this system from first principles, using crypto and decentralized protocols. It reflects the values of autonomy, privacy, and open infrastructure.
+
 ## System Sequencing
 
 The customer and the merchant need to have the supported infrastructure for tap to pay. On the merchants side, it needs POS terminal that follows Rozo protocol.
