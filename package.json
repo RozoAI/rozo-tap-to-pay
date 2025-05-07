@@ -1,7 +1,7 @@
 {
-  "name": "rozo-tap-to-pay",
+  "name": "Rozo Tap to Pay",
   "version": "1.0.0",
-  "description": "Crypto native tap to pay between wearable and POS",
+  "description": "Crypto native tap to pay between mobile, wearable and POS",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
