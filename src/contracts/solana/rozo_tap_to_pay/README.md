@@ -207,7 +207,7 @@ Leaderboard {
 
 ```bash
 # Clone repository
-git clone https://github.com/your-username/rozo-tap-to-pay.git
+git clone https://github.com/RozoAI/rozo-tap-to-pay.git
 cd rozo-tap-to-pay/src/contracts/solana/rozo_tap_to_pay
 
 # Install dependencies
