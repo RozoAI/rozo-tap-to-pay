@@ -1,5 +1,5 @@
 # Rozo Tap to Pay
-Crypto native tap to pay between wearable and POS
+Crypto Native Tap to Pay Between Mobile, Wearables and POS
 
 ## Overview
 
