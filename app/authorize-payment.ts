@@ -8,13 +8,14 @@ dotenv.config();
 
 // Read command line arguments
 const args = process.argv.slice(2);
-if (args.length < 2) {
-  console.error("Usage: ts-node authorize-payment.ts <token_mint_address> <amount>");
+if (args.length < 1) {
+  console.error("Usage: ts-node authorize-payment.ts <amount>");
   process.exit(1);
 }
 
-const tokenMintAddress = args[0];
-const amount = parseFloat(args[1]);
+// USDC Dev mint address
+const tokenMintAddress = "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr";
+const amount = parseFloat(args[0]);
 
 async function main() {
   // Configure the client to use the network from environment
@@ -26,14 +27,14 @@ async function main() {
     fs.readFileSync(path.join(__dirname, "../target/idl/rozo_tap_to_pay.json"), "utf-8")
   );
 
-  // Get program ID from Anchor.toml
-  const programId = new anchor.web3.PublicKey("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+  // Get program ID
+  const programId = new anchor.web3.PublicKey("MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe");
   
   // Create program interface
   const program = new Program(idl, programId, provider);
 
   // Get user's keypair
-  const keypairPath = process.env.USER_KEYPAIR_PATH || "/path/to/user_keypair.json";
+  const keypairPath = process.env.USER_KEYPAIR_PATH || "./keys/user.json";
   if (!fs.existsSync(keypairPath)) {
     console.error(`User keypair file not found at ${keypairPath}`);
     console.error("Please create a keypair file and set the USER_KEYPAIR_PATH environment variable");

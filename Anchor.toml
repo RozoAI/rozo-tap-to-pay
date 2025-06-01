@@ -18,7 +18,7 @@ rozo_tap_to_pay = "MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "testnet"
+cluster = "devnet"
 wallet = "./keys/deployer.json"
 
 [scripts]

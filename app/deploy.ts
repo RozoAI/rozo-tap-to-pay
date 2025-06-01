@@ -16,14 +16,14 @@ async function main() {
     fs.readFileSync(path.join(__dirname, "../target/idl/rozo_tap_to_pay.json"), "utf-8")
   );
 
-  // Get program ID from Anchor.toml
-  const programId = new anchor.web3.PublicKey("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+  // Get program ID
+  const programId = new anchor.web3.PublicKey("MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe");
   
   // Create program interface
   const program = new Program(idl, programId, provider);
 
   // Check if deployer has a keypair
-  const keypairPath = process.env.DEPLOYER_KEYPAIR_PATH || "/path/to/keypair.json";
+  const keypairPath = process.env.DEPLOYER_KEYPAIR_PATH || "./keys/deployer.json";
   if (!fs.existsSync(keypairPath)) {
     console.error(`Keypair file not found at ${keypairPath}`);
     console.error("Please create a keypair file and set the DEPLOYER_KEYPAIR_PATH environment variable");

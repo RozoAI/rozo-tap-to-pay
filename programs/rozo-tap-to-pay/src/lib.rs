@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use anchor_spl::associated_token::AssociatedToken;
 
@@ -220,24 +221,28 @@ pub struct ProcessPayment<'info> {
 }
 
 #[account]
+#[derive(Default)]
 pub struct ProgramConfig {
     pub authority: Pubkey,
     pub bump: u8,
 }
 
 #[account]
+#[derive(Default)]
 pub struct OwnerAccount {
     pub owner: Pubkey,
     pub bump: u8,
 }
 
 #[account]
+#[derive(Default)]
 pub struct MerchantAccount {
     pub merchant: Pubkey,
     pub bump: u8,
 }
 
 #[account]
+#[derive(Default)]
 pub struct PaymentAuth {
     pub user: Pubkey,
     pub token_mint: Pubkey,
@@ -248,7 +253,7 @@ pub struct PaymentAuth {
 #[error_code]
 pub enum ErrorCode {
     #[msg("Insufficient authorized amount")]
-    InsufficientAuthorizedAmount,
+    InsufficientAuthorizedAmount = 6000,
     #[msg("Calculation error")]
-    CalculationError,
+    CalculationError = 6001,
 } 

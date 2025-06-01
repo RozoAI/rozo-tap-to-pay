@@ -17,14 +17,17 @@ if (args.length < 1) {
   console.error(
     "Usage: ts-node admin.ts <command> [args...]\n" +
     "Commands:\n" +
-    "  add-owner <owner_public_key>\n" +
-    "  add-merchant <merchant_public_key>\n" +
-    "  process-payment <user_public_key> <merchant_public_key> <token_mint_address> <amount>"
+    "  add-merchant\n" +
+    "  process-payment <amount>"
   );
   process.exit(1);
 }
 
 const command = args[0];
+
+// Constants
+const USDC_DEV_MINT = "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr";
+const MERCHANT_ADDRESS = "AEEtekA2EBYVy3e5Xx8fD3GkjWSoCsLvLzdD6pZTgHiH";
 
 async function main() {
   // Configure the client to use the network from environment
@@ -36,14 +39,14 @@ async function main() {
     fs.readFileSync(path.join(__dirname, "../target/idl/rozo_tap_to_pay.json"), "utf-8")
   );
 
-  // Get program ID from Anchor.toml
-  const programId = new anchor.web3.PublicKey("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+  // Get program ID
+  const programId = new anchor.web3.PublicKey("MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe");
   
   // Create program interface
   const program = new Program(idl, programId, provider);
 
   // Get admin's keypair
-  const keypairPath = process.env.ADMIN_KEYPAIR_PATH || "/path/to/admin_keypair.json";
+  const keypairPath = process.env.ADMIN_KEYPAIR_PATH || "./keys/deployer.json";
   if (!fs.existsSync(keypairPath)) {
     console.error(`Admin keypair file not found at ${keypairPath}`);
     console.error("Please create a keypair file and set the ADMIN_KEYPAIR_PATH environment variable");
@@ -63,49 +66,8 @@ async function main() {
   );
 
   switch (command) {
-    case "add-owner": {
-      if (args.length < 2) {
-        console.error("Usage: ts-node admin.ts add-owner <owner_public_key>");
-        process.exit(1);
-      }
-
-      const newOwnerPubkey = new anchor.web3.PublicKey(args[1]);
-
-      // Derive owner PDA
-      const [ownerPDA] = await anchor.web3.PublicKey.findProgramAddress(
-        [Buffer.from("owner"), newOwnerPubkey.toBuffer()],
-        program.programId
-      );
-
-      try {
-        console.log(`Adding owner: ${newOwnerPubkey.toString()}`);
-        const tx = await program.methods
-          .addOwner(newOwnerPubkey)
-          .accounts({
-            programConfig: programConfigPDA,
-            ownerAccount: ownerPDA,
-            authority: adminKeypair.publicKey,
-            systemProgram: anchor.web3.SystemProgram.programId,
-          })
-          .signers([adminKeypair])
-          .rpc();
-
-        console.log("Owner added successfully!");
-        console.log("Transaction signature:", tx);
-      } catch (error) {
-        console.error("Error adding owner:", error);
-        process.exit(1);
-      }
-      break;
-    }
-
     case "add-merchant": {
-      if (args.length < 2) {
-        console.error("Usage: ts-node admin.ts add-merchant <merchant_public_key>");
-        process.exit(1);
-      }
-
-      const merchantPubkey = new anchor.web3.PublicKey(args[1]);
+      const merchantPubkey = new anchor.web3.PublicKey(MERCHANT_ADDRESS);
 
       // Derive PDAs
       const [ownerPDA] = await anchor.web3.PublicKey.findProgramAddress(
@@ -142,13 +104,15 @@ async function main() {
     }
 
     case "process-payment": {
-      if (args.length < 5) {
-        console.error(
-          "Usage: ts-node admin.ts process-payment <user_public_key> <merchant_public_key> <token_mint_address> <amount>"
-        );
+      if (args.length < 2) {
+        console.error("Usage: ts-node admin.ts process-payment <amount>");
         process.exit(1);
       }
 
+      // Get user keypair
+      const userKeypairPath = process.env.USER_KEYPAIR_PATH || "./keys/user.json";
+      if (!fs.existsSync(userKeypairPath)) {
+        console.error(`User keypair file not found at ${userKeypairPath}`);
       const userPubkey = new anchor.web3.PublicKey(args[1]);
       const merchantPubkey = new anchor.web3.PublicKey(args[2]);
       const mintPubkey = new anchor.web3.PublicKey(args[3]);
