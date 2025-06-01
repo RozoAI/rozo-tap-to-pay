@@ -1,4 +1,5 @@
-# Rozo Tap-to-Pay
+# Rozo Tap to Pay
+Crypto Native Tap to Pay Between Mobile, Wearables and POS
 
 A Solana smart contract built with the Anchor framework that enables tap-to-pay functionality for token payments.
 
