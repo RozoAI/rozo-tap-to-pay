@@ -2,15 +2,16 @@
 
 The Solana program that powers the Rozo Tap-to-Pay system, a decentralized payment solution for Solana tokens.
 
-**Deployed on Solana Devnet (in progress) **: [MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe](https://solscan.io/account/MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe?cluster=devnet)
+Devnet on Solana: [MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe](https://solscan.io/account/MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe?cluster=devnet)
 
+[Source Code of Rozo Program](./rozo-tap-to-pay/src/lib.rs)
 
 ## Use Case Flow
 
-<img src="../public/Tap2PayUseCase.png" width="50%" alt="Tap-to-Pay Use Case Flow">
+<img src="./public/Tap2PayUseCase.png" width="50%" alt="Tap-to-Pay Use Case Flow">
 
 
-## Payment Flow and Cod 
+## Payment Flow
 
 ### Step 1: Merchant Whitelisting - add_merchant by Rozo
 Rozo (contract owner) adds a coffee shop to the merchant whitelist. Only whitelisted merchants can receive payments through the system.
@@ -32,13 +33,4 @@ This happens instantly without requiring the user to sign a transaction for each
 
 ## Technical Architecture
 
-<img src="../public/TapTechDePin.png" width="60%" alt="Technical DePIN Architecture">
-
-
-## Key Components
-
-### Accounts
-- **Program Config**: Stores the contract authority
-- **Owner Account**: Identifies who can add merchants 
-- **Merchant Account**: Records whitelisted merchants
-- **Payment Auth**: Tracks user payment authorizations
+<img src="./public/TapTechDePin.png" width="60%" alt="Technical DePIN Architecture">
