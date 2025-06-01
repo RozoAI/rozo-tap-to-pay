@@ -43,12 +43,22 @@ NETWORK="devnet"
 echo -e "${YELLOW}===== Rozo Tap-to-Pay Demo (${NETWORK}) =====${NC}"
 echo 
 
+# Check if keys exist
+if [ ! -f "$DEPLOYER_KEYPAIR" ] || [ ! -f "$USER_KEYPAIR" ]; then
+  echo -e "${RED}Error: Keypair files not found!${NC}"
+  echo -e "Please create keypair files first:"
+  echo -e "  ${GREEN}mkdir -p ./keys${NC}"
+  echo -e "  ${GREEN}solana-keygen new --outfile ./keys/deployer.json${NC}"
+  echo -e "  ${GREEN}solana-keygen new --outfile ./keys/user.json${NC}"
+  exit 1
+fi
+
 # Get public keys
 DEPLOYER_PUBKEY=$(solana-keygen pubkey $DEPLOYER_KEYPAIR)
 USER_PUBKEY=$(solana-keygen pubkey $USER_KEYPAIR)
 
 # Export variables so TypeScript can access them
-export ANCHOR_PROVIDER_URL="https://api.devnet.solana.com"
+export ANCHOR_PROVIDER_URL="https://api.${NETWORK}.solana.com"
 export ANCHOR_WALLET=$DEPLOYER_KEYPAIR
 export DEPLOYER_KEYPAIR_PATH=$DEPLOYER_KEYPAIR
 export USER_KEYPAIR_PATH=$USER_KEYPAIR
@@ -83,12 +93,13 @@ if (( $(echo "$USER_BALANCE < $MIN_SOL_BALANCE" | bc -l 2>/dev/null) )) || [ -z 
   echo
 fi
 
-# Skip building for now since you're having Rust version issues
-echo -e "${YELLOW}Skipping build step due to Rust version compatibility issues...${NC}"
-echo -e "Note: You should build manually with a compatible Rust version:"
-echo -e "  ${GREEN}rustup default 1.68.0${NC}  # Or another version compatible with Solana"
-echo -e "  ${GREEN}cd programs/rozo-tap-to-pay && cargo build-bpf${NC}"
-echo
+# Build the program first
+echo -e "${YELLOW}Building the program...${NC}"
+./scripts/build-program.sh
+if [ $? -ne 0 ]; then
+  echo -e "${RED}Build failed. Please fix the build issues first.${NC}"
+  exit 1
+fi
 
 # 1. Check if program exists on devnet
 echo -e "${YELLOW}1. Checking if program exists on devnet...${NC}"
@@ -98,11 +109,10 @@ else
   echo -e "${YELLOW}Program not found on devnet.${NC}"
   
   # Check if program binary exists
-  PROGRAM_SO="target/deploy/rozo_tap_to_pay.so"
+  PROGRAM_SO="target/release/librozo_tap_to_pay.so"
   if [ ! -f "$PROGRAM_SO" ]; then
     echo -e "${RED}Error: Program binary not found at $PROGRAM_SO${NC}"
-    echo -e "You need to build the program first with a compatible Rust version."
-    echo -e "Try: ${GREEN}rustup default 1.68.0 && cd programs/rozo-tap-to-pay && cargo build-bpf${NC}"
+    echo -e "Try building manually: ${GREEN}cd programs/rozo-tap-to-pay && cargo build --release${NC}"
     exit 1
   fi
   
@@ -124,9 +134,6 @@ echo
 echo -e "${YELLOW}2. Initializing program...${NC}"
 npx ts-node scripts/deploy/deploy-testnet.ts "$PROGRAM_ID"
 echo 
-
-# Exit after initialization for testing
-exit 0
 
 # 3. Add merchant to whitelist
 echo -e "${YELLOW}3. Adding merchant to whitelist: ${MERCHANT}${NC}"
