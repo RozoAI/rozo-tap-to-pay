@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use anchor_spl::associated_token::AssociatedToken;
 
@@ -16,16 +15,16 @@ pub mod rozo_tap_to_pay {
         Ok(())
     }
 
-    pub fn add_owner(ctx: Context<AddOwner>, new_owner: Pubkey) -> Result<()> {
+    pub fn add_owner(ctx: Context<AddOwner>) -> Result<()> {
         let owner_account = &mut ctx.accounts.owner_account;
-        owner_account.owner = new_owner;
+        owner_account.owner = ctx.accounts.new_owner.key();
         owner_account.bump = *ctx.bumps.get("owner_account").unwrap();
         Ok(())
     }
 
-    pub fn add_merchant(ctx: Context<AddMerchant>, merchant: Pubkey) -> Result<()> {
+    pub fn add_merchant(ctx: Context<AddMerchant>) -> Result<()> {
         let merchant_account = &mut ctx.accounts.merchant_account;
-        merchant_account.merchant = merchant;
+        merchant_account.merchant = ctx.accounts.merchant.key();
         merchant_account.bump = *ctx.bumps.get("merchant_account").unwrap();
         Ok(())
     }
@@ -99,6 +98,9 @@ pub struct AddOwner<'info> {
     )]
     pub program_config: Account<'info, ProgramConfig>,
     
+    /// The new owner's public key that will be stored
+    pub new_owner: UncheckedAccount<'info>,
+    
     #[account(
         init,
         payer = authority,
@@ -129,6 +131,9 @@ pub struct AddMerchant<'info> {
         bump = owner_account.bump,
     )]
     pub owner_account: Account<'info, OwnerAccount>,
+    
+    /// The merchant's public key that will be stored
+    pub merchant: UncheckedAccount<'info>,
     
     #[account(
         init,
@@ -181,6 +186,9 @@ pub struct ProcessPayment<'info> {
     )]
     pub owner_account: Account<'info, OwnerAccount>,
     
+    /// The merchant who is receiving the payment
+    pub merchant: UncheckedAccount<'info>,
+    
     #[account(
         seeds = [b"merchant", merchant.key().as_ref()],
         bump = merchant_account.bump,
@@ -194,6 +202,7 @@ pub struct ProcessPayment<'info> {
     )]
     pub payment_auth: Account<'info, PaymentAuth>,
     
+    /// CHECK: This account is only used for constraint checking
     pub user: AccountInfo<'info>,
     
     #[account(

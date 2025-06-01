@@ -28,6 +28,7 @@ PAYMENT_AMOUNT=1
 # Path to keypairs
 DEPLOYER_KEYPAIR="./keys/deployer.json"
 USER_KEYPAIR="./keys/user.json"
+PROGRAM_KEYPAIR="./target/deploy/rozo_tap_to_pay-keypair.json"
 
 # Minimum SOL balance required (in SOL)
 MIN_SOL_BALANCE=0.1
@@ -82,27 +83,49 @@ if (( $(echo "$USER_BALANCE < $MIN_SOL_BALANCE" | bc -l 2>/dev/null) )) || [ -z 
   echo
 fi
 
-# 0. Build the program
-echo -e "${YELLOW}0. Building the Solana program...${NC}"
-anchor build
+# Skip building for now since you're having Rust version issues
+echo -e "${YELLOW}Skipping build step due to Rust version compatibility issues...${NC}"
+echo -e "Note: You should build manually with a compatible Rust version:"
+echo -e "  ${GREEN}rustup default 1.68.0${NC}  # Or another version compatible with Solana"
+echo -e "  ${GREEN}cd programs/rozo-tap-to-pay && cargo build-bpf${NC}"
 echo
 
-exit 0
-
-
-# 1. Deploy contract to devnet
-echo -e "${YELLOW}1. Deploying contract to devnet...${NC}"
-anchor deploy --provider.cluster devnet
+# 1. Check if program exists on devnet
+echo -e "${YELLOW}1. Checking if program exists on devnet...${NC}"
+if solana program show $PROGRAM_ID --url $NETWORK &> /dev/null; then
+  echo -e "${GREEN}Program already deployed to devnet!${NC}"
+else
+  echo -e "${YELLOW}Program not found on devnet.${NC}"
+  
+  # Check if program binary exists
+  PROGRAM_SO="target/deploy/rozo_tap_to_pay.so"
+  if [ ! -f "$PROGRAM_SO" ]; then
+    echo -e "${RED}Error: Program binary not found at $PROGRAM_SO${NC}"
+    echo -e "You need to build the program first with a compatible Rust version."
+    echo -e "Try: ${GREEN}rustup default 1.68.0 && cd programs/rozo-tap-to-pay && cargo build-bpf${NC}"
+    exit 1
+  fi
+  
+  echo -e "${YELLOW}Deploying program...${NC}"
+  # Deploy using solana CLI
+  solana program deploy $PROGRAM_SO \
+    --program-id $PROGRAM_KEYPAIR \
+    --keypair $DEPLOYER_KEYPAIR \
+    --url $NETWORK
+    
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to deploy program${NC}"
+    exit 1
+  fi
+fi
 echo
-
-exit 0
-
 
 # 2. Initialize the program
 echo -e "${YELLOW}2. Initializing program...${NC}"
 npx ts-node scripts/deploy/deploy-testnet.ts "$PROGRAM_ID"
 echo 
 
+# Exit after initialization for testing
 exit 0
 
 # 3. Add merchant to whitelist
