@@ -1,0 +1,28 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+rozo_tap_to_pay = "MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe"
+
+[programs.devnet]
+rozo_tap_to_pay = "MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe"
+
+[programs.testnet]
+rozo_tap_to_pay = "MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe"
+
+[programs.mainnet]
+rozo_tap_to_pay = "MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "./keys/deployer.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+[toolchain]
+anchor_version = "0.28.0" 

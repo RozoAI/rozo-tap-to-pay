@@ -1,22 +1,43 @@
 {
-  "name": "Rozo Tap to Pay",
-  "version": "1.0.0",
-  "description": "Crypto native tap to pay between mobile, wearable and POS",
-  "main": "src/index.js",
+  "name": "rozo-tap-to-pay",
+  "version": "0.1.0",
+  "description": "A Solana smart contract for tap-to-pay functionality",
+  "main": "index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "test": "jest",
-    "dev": "nodemon src/index.js"
+    "test": "anchor test",
+    "build": "anchor build",
+    "build:program": "./scripts/build-program.sh",
+    "deploy": "anchor deploy",
+    "deploy:testnet": "ts-node scripts/deploy/deploy-testnet.ts",
+    "authorize:usdc": "ts-node scripts/authorize/authorize-usdc.ts",
+    "add:merchant": "ts-node scripts/merchant/add-merchant.ts",
+    "process:payment": "ts-node scripts/payment/process-payment.ts",
+    "soldev": "./scripts/run-soldev.sh",
+    "fund:devnet": "./scripts/fund-devnet.sh",
+    "generate-accounts": "node scripts/generate-accounts.js",
+    "fund-accounts": "node scripts/fund-accounts.js"
   },
+  "keywords": [
+    "solana",
+    "anchor",
+    "blockchain",
+    "payments"
+  ],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "crypto-js": "^4.1.1",
-    "dotenv": "^16.0.3",
-    "body-parser": "^1.20.2"
+    "@coral-xyz/anchor": "^0.28.0",
+    "@solana/spl-token": "^0.3.7",
+    "@solana/web3.js": "^1.73.3",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
-    "jest": "^29.5.0",
-    "nodemon": "^2.0.22",
-    "supertest": "^6.3.3"
+    "@types/chai": "^4.3.4",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^18.14.2",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^4.9.5"
   }
 } 
