@@ -98,7 +98,7 @@ echo -e "${YELLOW}Skipping build step as requested...${NC}"
 
 # Check if program exists on devnet
 echo -e "${YELLOW}1. Checking if program exists on devnet...${NC}"
-if solana program show $PROGRAM_ID --url $NETWORK &> /dev/null; then
+if solana program show $PROGRAM_ID -k $DEPLOYER_KEYPAIR --url $NETWORK &> /dev/null; then
   echo -e "${GREEN}Program already deployed to devnet!${NC}"
   
   # 2. Initialize the program

@@ -98,7 +98,7 @@ pub struct AddOwner<'info> {
     )]
     pub program_config: Account<'info, ProgramConfig>,
     
-    /// The new owner's public key that will be stored
+    /// CHECK: This account's key is used as a seed for the owner account PDA and is not read or written to
     pub new_owner: UncheckedAccount<'info>,
     
     #[account(
@@ -132,7 +132,7 @@ pub struct AddMerchant<'info> {
     )]
     pub owner_account: Account<'info, OwnerAccount>,
     
-    /// The merchant's public key that will be stored
+    /// CHECK: This account's key is used as a seed for the merchant account PDA and is not read or written to
     pub merchant: UncheckedAccount<'info>,
     
     #[account(
@@ -186,7 +186,7 @@ pub struct ProcessPayment<'info> {
     )]
     pub owner_account: Account<'info, OwnerAccount>,
     
-    /// The merchant who is receiving the payment
+    /// CHECK: This account's key is used as a seed for the merchant account PDA and is not read or written to
     pub merchant: UncheckedAccount<'info>,
     
     #[account(
