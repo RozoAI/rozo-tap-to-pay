@@ -1,65 +1,44 @@
-# Rozo Tap-to-Pay Smart Contract
+# Rozo Tap-to-Pay Program on Solana
 
-A Solana smart contract that enables tap-to-pay functionality using tokens (like USDC).
+The Solana program that powers the Rozo Tap-to-Pay system, a decentralized payment solution for Solana tokens.
 
-**Deployed Contract (in progress)**: [View on Solscan (Devnet)](https://solscan.io/account/MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe?cluster=devnet)
+**Deployed on Solana Devnet (in progress) **: [MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe](https://solscan.io/account/MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe?cluster=devnet)
+
 
 ## Use Case Flow
 
-<img src="public/Tap2PayUseCase.png" width="50%" alt="Tap-to-Pay Use Case Flow">
+<img src="../public/Tap2PayUseCase.png" width="50%" alt="Tap-to-Pay Use Case Flow">
 
-## Real-World Payment Flow
 
-### Coffee Purchase Example
+## Payment Flow and Cod 
 
-1. **Setup**
-   - Rozo deploys the smart contract on Solana
-   - Rozo adds "Coffee Shop" to the merchant whitelist
+### Step 1: Merchant Whitelisting - add_merchant by Rozo
+Rozo (contract owner) adds a coffee shop to the merchant whitelist. Only whitelisted merchants can receive payments through the system.
 
-2. **Customer Authorization**
-   - Customer authorizes 10 USDC for Rozo payments
-   - The 10 USDC remains in the customer's wallet
-   - An authorization record is created on-chain
+### Step 2: User Authorization for DePins - authorize_payment by User
+A user authorizes 10 USDC for his devices. It can be her/his Solana Mobile, Smart Wearables, AI Agents or a Robot Dog. This creates an authorization record, but the 10 USDC remains in the user's wallet until a payment is processed.
 
-3. **Coffee Purchase**
-   - Customer visits Coffee Shop and buys a $2 coffee
-   - Customer taps their phone to initiate payment
-   - Rozo's payment processor executes the transaction:
-     - Verifies Coffee Shop is whitelisted
-     - Checks customer has sufficient authorization (10 USDC)
-     - Transfers 2 USDC from customer to Coffee Shop
-     - Reduces customer's authorization from 10 USDC to 8 USDC
+### Step 3: Payment Processing - process_payment by Rozo (PayMaster)
+When the user buys a $2 coffee from the whitelisted coffee shop:
+1. The Rozo payment processor triggers the smart contract
+2. The contract verifies the coffee shop is whitelisted
+3. The contract checks the user has sufficient authorization (10 USDC > $2)
+4. $2 worth of USDC is transferred from the user's wallet to the coffee shop
+5. The user's authorization balance is reduced from 10 USDC to 8 USDC
 
-4. **Benefits**
-   - Coffee Shop receives instant payment
-   - Customer doesn't need to sign a transaction for each purchase
-   - The remaining 8 USDC can be used for future purchases
+This happens instantly without requiring the user to sign a transaction for each purchase.
+
+
 
 ## Technical Architecture
 
-<img src="public/TapTechDePin.png" width="25%" alt="Technical DePIN Architecture">
+<img src="../public/TapTechDePin.png" width="60%" alt="Technical DePIN Architecture">
 
-## How It Works
 
-Rozo uses an escrow-like pattern without actually holding customer funds:
+## Key Components
 
-1. **Merchant Whitelisting**: Only approved merchants can receive payments
-2. **Authorization**: Users pre-approve spending limits (not actual transfers)
-3. **Processing**: A trusted payment processor executes transfers within authorization limits
-
-## Default Token
-
-By default, the contract uses a USDC devnet token (Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr), but it supports any SPL token.
-
-## Key Scripts
-
-```bash
-# Add merchant to whitelist
-ts-node scripts/merchant/add-merchant.ts <merchant_public_key>
-
-# Authorize USDC for payments
-ts-node scripts/authorize/authorize-usdc.ts 10
-
-# Process a payment
-ts-node scripts/payment/process-payment.ts <user_public_key> <merchant_public_key> 2
-``` 
+### Accounts
+- **Program Config**: Stores the contract authority
+- **Owner Account**: Identifies who can add merchants 
+- **Merchant Account**: Records whitelisted merchants
+- **Payment Auth**: Tracks user payment authorizations
