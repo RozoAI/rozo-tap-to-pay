@@ -93,65 +93,42 @@ if (( $(echo "$USER_BALANCE < $MIN_SOL_BALANCE" | bc -l 2>/dev/null) )) || [ -z 
   echo
 fi
 
-# Build the program first
-echo -e "${YELLOW}Building the program...${NC}"
-./scripts/build-program.sh
-if [ $? -ne 0 ]; then
-  echo -e "${RED}Build failed. Please fix the build issues first.${NC}"
-  exit 1
-fi
+# Skipping building since it's already built
+echo -e "${YELLOW}Skipping build step as requested...${NC}"
 
-# 1. Check if program exists on devnet
+# Check if program exists on devnet
 echo -e "${YELLOW}1. Checking if program exists on devnet...${NC}"
 if solana program show $PROGRAM_ID --url $NETWORK &> /dev/null; then
   echo -e "${GREEN}Program already deployed to devnet!${NC}"
+  
+  # 2. Initialize the program
+  echo -e "${YELLOW}2. Initializing program...${NC}"
+  npx ts-node scripts/deploy/deploy-testnet.ts "$PROGRAM_ID"
+  echo 
+
+  # 3. Add merchant to whitelist
+  echo -e "${YELLOW}3. Adding merchant to whitelist: ${MERCHANT}${NC}"
+  npx ts-node scripts/merchant/add-merchant.ts "$MERCHANT" "$PROGRAM_ID"
+  echo 
+
+  # 4. User authorizes USDC Dev
+  echo -e "${YELLOW}4. User authorizing ${AUTH_AMOUNT} USDC Dev tokens...${NC}"
+  # Temporarily set user wallet for this operation
+  export ANCHOR_WALLET=$USER_KEYPAIR
+  npx ts-node scripts/authorize/authorize-usdc.ts "$AUTH_AMOUNT" "$USDC_DEV_MINT" "$PROGRAM_ID"
+  # Reset to deployer wallet
+  export ANCHOR_WALLET=$DEPLOYER_KEYPAIR
+  echo 
+
+  # 5. Process payment (USDC Dev from user to merchant)
+  echo -e "${YELLOW}5. Processing payment: ${PAYMENT_AMOUNT} USDC Dev from user to merchant...${NC}"
+  npx ts-node scripts/payment/process-payment.ts "$USER_PUBKEY" "$MERCHANT" "$PAYMENT_AMOUNT" "$USDC_DEV_MINT" "$PROGRAM_ID"
+  echo 
 else
-  echo -e "${YELLOW}Program not found on devnet.${NC}"
-  
-  # Check if program binary exists
-  PROGRAM_SO="target/release/librozo_tap_to_pay.so"
-  if [ ! -f "$PROGRAM_SO" ]; then
-    echo -e "${RED}Error: Program binary not found at $PROGRAM_SO${NC}"
-    echo -e "Try building manually: ${GREEN}cd programs/rozo-tap-to-pay && cargo build --release${NC}"
-    exit 1
-  fi
-  
-  echo -e "${YELLOW}Deploying program...${NC}"
-  # Deploy using solana CLI
-  solana program deploy $PROGRAM_SO \
-    --program-id $PROGRAM_KEYPAIR \
-    --keypair $DEPLOYER_KEYPAIR \
-    --url $NETWORK
-    
-  if [ $? -ne 0 ]; then
-    echo -e "${RED}Error: Failed to deploy program${NC}"
-    exit 1
-  fi
+  echo -e "${RED}Program not found on devnet. Please deploy it first.${NC}"
+  echo -e "You can deploy using solana CLI:"
+  echo -e "  ${GREEN}solana program deploy <PATH_TO_PROGRAM_SO> --program-id ${PROGRAM_KEYPAIR} --keypair ${DEPLOYER_KEYPAIR} --url ${NETWORK}${NC}"
+  exit 1
 fi
-echo
-
-# 2. Initialize the program
-echo -e "${YELLOW}2. Initializing program...${NC}"
-npx ts-node scripts/deploy/deploy-testnet.ts "$PROGRAM_ID"
-echo 
-
-# 3. Add merchant to whitelist
-echo -e "${YELLOW}3. Adding merchant to whitelist: ${MERCHANT}${NC}"
-npx ts-node scripts/merchant/add-merchant.ts "$MERCHANT" "$PROGRAM_ID"
-echo 
-
-# 4. User authorizes USDC Dev
-echo -e "${YELLOW}4. User authorizing ${AUTH_AMOUNT} USDC Dev tokens...${NC}"
-# Temporarily set user wallet for this operation
-export ANCHOR_WALLET=$USER_KEYPAIR
-npx ts-node scripts/authorize/authorize-usdc.ts "$AUTH_AMOUNT" "$USDC_DEV_MINT" "$PROGRAM_ID"
-# Reset to deployer wallet
-export ANCHOR_WALLET=$DEPLOYER_KEYPAIR
-echo 
-
-# 5. Process payment (USDC Dev from user to merchant)
-echo -e "${YELLOW}5. Processing payment: ${PAYMENT_AMOUNT} USDC Dev from user to merchant...${NC}"
-npx ts-node scripts/payment/process-payment.ts "$USER_PUBKEY" "$MERCHANT" "$PAYMENT_AMOUNT" "$USDC_DEV_MINT" "$PROGRAM_ID"
-echo 
 
 echo -e "${GREEN}===== Demo Complete =====${NC}" 
