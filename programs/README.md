@@ -6,7 +6,7 @@ A Solana smart contract that enables tap-to-pay functionality using tokens (like
 
 ## Use Case Flow
 
-![Tap-to-Pay Use Case Flow](public/Tap2PayUseCase.png)
+<img src="public/Tap2PayUseCase.png" width="50%" alt="Tap-to-Pay Use Case Flow">
 
 ## Real-World Payment Flow
 
@@ -37,7 +37,7 @@ A Solana smart contract that enables tap-to-pay functionality using tokens (like
 
 ## Technical Architecture
 
-![Technical DePIN Architecture](public/TapTechDePin.png)
+<img src="public/TapTechDePin.png" width="25%" alt="Technical DePIN Architecture">
 
 ## How It Works
 
