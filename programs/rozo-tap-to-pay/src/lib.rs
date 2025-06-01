@@ -1,0 +1,254 @@
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::associated_token::AssociatedToken;
+
+declare_id!("MVMxTF7pYwzi4rjKRMe8v2pKxiEcGa5TR7LbR59jiLe");
+
+#[program]
+pub mod rozo_tap_to_pay {
+    use super::*;
+
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        let program_config = &mut ctx.accounts.program_config;
+        program_config.authority = ctx.accounts.authority.key();
+        program_config.bump = *ctx.bumps.get("program_config").unwrap();
+        Ok(())
+    }
+
+    pub fn add_owner(ctx: Context<AddOwner>, new_owner: Pubkey) -> Result<()> {
+        let owner_account = &mut ctx.accounts.owner_account;
+        owner_account.owner = new_owner;
+        owner_account.bump = *ctx.bumps.get("owner_account").unwrap();
+        Ok(())
+    }
+
+    pub fn add_merchant(ctx: Context<AddMerchant>, merchant: Pubkey) -> Result<()> {
+        let merchant_account = &mut ctx.accounts.merchant_account;
+        merchant_account.merchant = merchant;
+        merchant_account.bump = *ctx.bumps.get("merchant_account").unwrap();
+        Ok(())
+    }
+
+    pub fn authorize_payment(ctx: Context<AuthorizePayment>, amount: u64) -> Result<()> {
+        let auth_account = &mut ctx.accounts.payment_auth;
+        auth_account.user = ctx.accounts.user.key();
+        auth_account.token_mint = ctx.accounts.token_mint.key();
+        auth_account.authorized_amount = amount;
+        auth_account.bump = *ctx.bumps.get("payment_auth").unwrap();
+        Ok(())
+    }
+
+    pub fn process_payment(ctx: Context<ProcessPayment>, amount: u64) -> Result<()> {
+        let payment_auth = &mut ctx.accounts.payment_auth;
+        
+        // Check if there's enough authorized amount
+        require!(payment_auth.authorized_amount >= amount, ErrorCode::InsufficientAuthorizedAmount);
+        
+        // Deduct from authorized amount
+        payment_auth.authorized_amount = payment_auth.authorized_amount.checked_sub(amount)
+            .ok_or(ErrorCode::CalculationError)?;
+        
+        // Transfer tokens
+        let transfer_cpi_accounts = Transfer {
+            from: ctx.accounts.user_token_account.to_account_info(),
+            to: ctx.accounts.merchant_token_account.to_account_info(),
+            authority: ctx.accounts.user.to_account_info(),
+        };
+        
+        let seeds = &[
+            b"program_config".as_ref(),
+            &[ctx.accounts.program_config.bump],
+        ];
+        let signer = &[&seeds[..]];
+        
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            transfer_cpi_accounts,
+            signer,
+        );
+        
+        token::transfer(cpi_ctx, amount)?;
+        
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct Initialize<'info> {
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + 32 + 1,
+        seeds = [b"program_config"],
+        bump
+    )]
+    pub program_config: Account<'info, ProgramConfig>,
+    
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct AddOwner<'info> {
+    #[account(
+        mut,
+        seeds = [b"program_config"],
+        bump = program_config.bump,
+    )]
+    pub program_config: Account<'info, ProgramConfig>,
+    
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + 32 + 1,
+        seeds = [b"owner", new_owner.key().as_ref()],
+        bump,
+    )]
+    pub owner_account: Account<'info, OwnerAccount>,
+    
+    #[account(
+        mut,
+        constraint = authority.key() == program_config.authority
+    )]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct AddMerchant<'info> {
+    #[account(
+        seeds = [b"program_config"],
+        bump = program_config.bump,
+    )]
+    pub program_config: Account<'info, ProgramConfig>,
+    
+    #[account(
+        seeds = [b"owner", authority.key().as_ref()],
+        bump = owner_account.bump,
+    )]
+    pub owner_account: Account<'info, OwnerAccount>,
+    
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + 32 + 1,
+        seeds = [b"merchant", merchant.key().as_ref()],
+        bump,
+    )]
+    pub merchant_account: Account<'info, MerchantAccount>,
+    
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct AuthorizePayment<'info> {
+    #[account(
+        seeds = [b"program_config"],
+        bump = program_config.bump,
+    )]
+    pub program_config: Account<'info, ProgramConfig>,
+    
+    #[account(
+        init_if_needed,
+        payer = user,
+        space = 8 + 32 + 32 + 8 + 1,
+        seeds = [b"payment_auth", user.key().as_ref(), token_mint.key().as_ref()],
+        bump,
+    )]
+    pub payment_auth: Account<'info, PaymentAuth>,
+    
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub token_mint: Account<'info, token::Mint>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ProcessPayment<'info> {
+    #[account(
+        seeds = [b"program_config"],
+        bump = program_config.bump,
+    )]
+    pub program_config: Account<'info, ProgramConfig>,
+    
+    #[account(
+        seeds = [b"owner", authority.key().as_ref()],
+        bump = owner_account.bump,
+    )]
+    pub owner_account: Account<'info, OwnerAccount>,
+    
+    #[account(
+        seeds = [b"merchant", merchant.key().as_ref()],
+        bump = merchant_account.bump,
+    )]
+    pub merchant_account: Account<'info, MerchantAccount>,
+    
+    #[account(
+        mut,
+        seeds = [b"payment_auth", user.key().as_ref(), token_mint.key().as_ref()],
+        bump = payment_auth.bump,
+    )]
+    pub payment_auth: Account<'info, PaymentAuth>,
+    
+    pub user: AccountInfo<'info>,
+    
+    #[account(
+        mut,
+        constraint = user_token_account.owner == user.key(),
+        constraint = user_token_account.mint == token_mint.key(),
+    )]
+    pub user_token_account: Account<'info, TokenAccount>,
+    
+    #[account(
+        mut,
+        constraint = merchant_token_account.owner == merchant_account.merchant,
+        constraint = merchant_token_account.mint == token_mint.key(),
+    )]
+    pub merchant_token_account: Account<'info, TokenAccount>,
+    
+    pub token_mint: Account<'info, token::Mint>,
+    
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+pub struct ProgramConfig {
+    pub authority: Pubkey,
+    pub bump: u8,
+}
+
+#[account]
+pub struct OwnerAccount {
+    pub owner: Pubkey,
+    pub bump: u8,
+}
+
+#[account]
+pub struct MerchantAccount {
+    pub merchant: Pubkey,
+    pub bump: u8,
+}
+
+#[account]
+pub struct PaymentAuth {
+    pub user: Pubkey,
+    pub token_mint: Pubkey,
+    pub authorized_amount: u64,
+    pub bump: u8,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("Insufficient authorized amount")]
+    InsufficientAuthorizedAmount,
+    #[msg("Calculation error")]
+    CalculationError,
+} 

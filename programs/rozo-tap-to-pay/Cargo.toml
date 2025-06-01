@@ -1,0 +1,21 @@
+[package]
+name = "rozo-tap-to-pay"
+version = "0.1.0"
+description = "A Solana smart contract for tap-to-pay functionality"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "rozo_tap_to_pay"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.31.1"
+anchor-spl = "0.31.1"
+solana-program = "~1.16.6" 

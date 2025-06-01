@@ -1,106 +1,157 @@
-# Rozo Tap to Pay
-Crypto native tap to pay between wearable and POS
+# Rozo Tap-to-Pay
 
-## Overview
+A Solana smart contract built with the Anchor framework that enables tap-to-pay functionality for token payments.
 
-Rozo enables a customer to make payment to a merchant with crypto. To improve the experience, we introduce Tap to Pay via Rozo (not Visa).
+## Features
 
-## Why we need this?
+- **Token Authorization**: Users can authorize tokens (e.g., USDC) to be spent by the contract
+- **Merchant Whitelisting**: Contract owners can whitelist merchant addresses
+- **Secure Payments**: Only authorized owners can trigger payments from users to merchants
+- **User Control**: Tokens remain in the user's wallet until payment is processed
 
-While Visa offers Tap to Pay, it’s built on legacy rails—centralized, custodial, and fiat-based. Every transaction passes through multiple intermediaries, incurs fees, and exposes sensitive data like plaintext CVVs.
+## Architecture
 
-Rozo Tap to Pay reimagines this system from first principles, using crypto and decentralized protocols. It reflects the values of autonomy, privacy, and open infrastructure.
+The contract uses Program Derived Addresses (PDAs) to store various states:
 
-## System Sequencing
+1. **Program Config**: Stores the contract authority (deployer)
+2. **Owner Accounts**: Stores owner addresses that have admin privileges
+3. **Merchant Accounts**: Stores whitelisted merchant addresses
+4. **Payment Auth**: Stores the amount of tokens a user has authorized for payments
 
-The customer and the merchant need to have the supported infrastructure for tap to pay. On the merchants side, it needs POS terminal that follows Rozo protocol.
+## Prerequisites
 
-<img width="935" alt="Tap to pay sequence" src="https://github.com/user-attachments/assets/bf7f511d-5403-49ac-982c-81670bd35f4e" />
-
-## Specification
-
-The tap to pay system is built on the technologies below:
-- NFC Data Exchange Format (NDEF)
-- Replay protection using counters
-- AES encryption and AES-CMAC for security
-
-### Interaction
-The point-of-sale (POS) will read a NDEF message when customer tap. The NDEF will change with each use.
-
-Example URL format: https://tap.rozo.ai?d=A3EF40F6D46F1BB36E6EBF2314D4A432&c=F459EEA788E37E44
-
-### Server side verification of the payment request
-- d: stands for decrypto. It's the SDM Meta Read Access Key value, decrypt the UID and counter with AES
-- c: value and the SDM File Read Access Key value, check with AES-CMAC
-- the UID and counter is used on the Rozo service to verify that the request is valid
-
-## Implementation
-
-This repository contains a reference implementation of the Rozo Tap to Pay system, including:
-
-1. Crypto modules for encryption and verification
-2. NFC message handling
-3. Client device simulator
-4. POS terminal simulator
-5. Server-side payment verification
+- Solana CLI tools
+- Anchor Framework
+- Node.js and npm/yarn
+- Rust and Cargo
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js (v14 or higher)
-- npm or yarn
-
 ### Installation
 
-```bash
-git clone https://github.com/yourusername/rozo-tap-to-pay.git
-cd rozo-tap-to-pay
-npm install
-```
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/rozo-tap-to-pay.git
+   cd rozo-tap-to-pay
+   ```
 
-### Running the Demo
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-```bash
-node src/demo.js
-```
+3. Generate Solana accounts (deployer and user):
+   ```
+   npm run generate-accounts
+   ```
+   This script will:
+   - Generate Solana keypairs for deployer and user
+   - Save them to the `keys/` directory
+   - Create a `.env` file with the paths to these keypairs
 
-This will simulate a complete payment flow including:
-1. Customer tapping their device
-2. POS terminal reading the NFC data
-3. Server verifying the payment
-4. Replay attack prevention demonstration
+4. Fund your accounts with SOL (on devnet):
+   ```
+   npm run fund-accounts
+   ```
+   This requires the Solana CLI to be installed and will airdrop SOL to your accounts on devnet.
 
-### Running the Server
-
-```bash
-npm start
-```
-
-The server will start on port 3000 by default. You can change this by setting the PORT environment variable.
+5. Build the program:
+   ```
+   npm run build
+   ```
 
 ### Testing
 
-```bash
-npm test
+Run the test suite:
+
+```
+anchor test
 ```
 
-## Security Features
+## Usage
 
-The implementation includes several security features:
+### Deploying the Contract
 
-1. **Encryption**: Customer data is encrypted using AES
-2. **Data Integrity**: AES-CMAC ensures message integrity
-3. **Replay Protection**: Counter mechanism prevents replay attacks
-4. **Secure Keys**: Keys should be securely stored (not hardcoded as in this demo)
+1. Update the program ID in `Anchor.toml` and `lib.rs` with your own if needed
+2. Set up your Solana wallet and ensure it has SOL for deployment
+3. Run the deployment script:
+   ```
+   npm run deploy:mainnet
+   ```
 
-## API Endpoints
+### For Users
 
-- `GET /tap?d=<value>&c=<value>` - Verify a tap payment
-- `POST /generate` - Generate new payment parameters for a device
+To authorize tokens for payment:
+
+```
+yarn authorize <token_mint_address> <amount>
+```
+
+Example:
+```
+yarn authorize EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 10
+```
+
+This authorizes 10 USDC (assuming the provided address is USDC) for payments.
+
+### For Admins
+
+Admin operations:
+
+1. Add an owner:
+   ```
+   yarn admin add-owner <owner_public_key>
+   ```
+
+2. Add a merchant:
+   ```
+   yarn admin add-merchant <merchant_public_key>
+   ```
+
+3. Process a payment:
+   ```
+   yarn admin process-payment <user_public_key> <merchant_public_key> <token_mint_address> <amount>
+   ```
+
+   Example:
+   ```
+   yarn admin process-payment 7KBVGvotfYJwfKJzAfEY5jabbus3MsZTGiALWi67L8Y2 Hm1rJ4DmXZMxXFMPuieeKGgMUJaZ6r7AzWhtKbg94pTY EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v 3
+   ```
+
+   This processes a payment of 3 USDC from the user to the merchant.
+
+## Security Considerations
+
+- The contract ensures only authorized owners can add merchants and process payments
+- Users maintain control of their tokens until a payment is processed
+- Tokens remain in the user's wallet until a specific payment is authorized and processed
+- Only whitelisted merchants can receive payments
+
+## Environment Variables
+
+Create a `.env` file with the following variables:
+
+```
+# For deployment
+DEPLOYER_KEYPAIR_PATH=/path/to/deployer_keypair.json
+
+# For user operations
+USER_KEYPAIR_PATH=/path/to/user_keypair.json
+
+# For admin operations
+ADMIN_KEYPAIR_PATH=/path/to/admin_keypair.json
+```
+
+## Contract Workflow
+
+1. **Initialization**: The deployer initializes the contract and becomes the authority
+2. **Add Owners**: The authority adds owners to the contract
+3. **Add Merchants**: Owners add merchants to the whitelist
+4. **User Authorization**: Users authorize tokens for payments
+5. **Payment Processing**: Owners trigger payments from users to merchants
 
 ## License
 
-This project is licensed under the MIT License.
+[ISC License](LICENSE)
 
 
